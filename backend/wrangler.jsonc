@@ -1,0 +1,29 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "mli-backend",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-11-08",
+  "workers_dev": false,
+  "send_metrics": false,
+  "observability": { "enabled": false },
+  "vars": {
+    "ENABLE_PAID_APIS": "false",
+    "ENABLE_AUTOMATED_EMAIL": "false",
+    "ENABLE_LARGE_UPLOADS": "false"
+  },
+  "d1_databases": [
+    {
+      "binding": "CONTENT_DB",
+      "database_name": "mli-content",
+      // Local-only placeholder. Replace with a real D1 ID before remote setup.
+      "database_id": "00000000-0000-0000-0000-000000000001",
+      "migrations_dir": "migrations/content"
+    },
+    {
+      "binding": "OPS_DB",
+      "database_name": "mli-ops",
+      "database_id": "00000000-0000-0000-0000-000000000002",
+      "migrations_dir": "migrations/ops"
+    }
+  ]
+}
