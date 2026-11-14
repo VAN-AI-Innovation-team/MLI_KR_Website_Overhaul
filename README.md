@@ -2,14 +2,15 @@
 
 MLI 한국지부 홈페이지 개편 프로젝트입니다.
 
-## 백엔드 1단계
+## 백엔드 2단계
 
-`backend/`에 Cloudflare Workers·D1 기반의 DB 설계를 구성했습니다. 업무용 원본 DB와 공개 콘텐츠 DB, SQL 마이그레이션, 연결 상태 API, 데이터 무결성 테스트를 포함합니다.
+`backend/`에 Cloudflare Workers·D1 기반의 DB 구조와 Google 로그인·서버 세션·회원 소유권·관리자 인증을 구현했습니다. 업무용 원본 DB와 공개 콘텐츠 DB, SQL 마이그레이션, 상태 확인 API와 자동 테스트를 포함합니다.
 
 - [백엔드 설치와 실행](backend/README.md)
 - [테이블 구조와 구현 규칙](backend/docs/database.md)
+- [Google 로그인·회원·관리자 연동](backend/docs/authentication.md)
 
-Node.js 24 이상에서 로컬로 실행할 수 있으며, 이 단계에는 Cloudflare 계정이나 API 키가 필요하지 않습니다. 로그인·상담 제출·발행 API는 이후 단계에서 연결합니다.
+Node.js 24 이상에서 DB와 자동 테스트를 로컬로 실행할 수 있습니다. 실제 Google 로그인에는 웹용 OAuth 클라이언트 ID와 확정한 정책 버전을 설정합니다. 상담 제출·게시판 쓰기·발행 API는 이후 단계에서 연결합니다.
 
 ```powershell
 cd backend

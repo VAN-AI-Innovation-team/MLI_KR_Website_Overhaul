@@ -1,8 +1,10 @@
-# MLI 백엔드 1단계 DB 기반
+# MLI 백엔드 2단계 로그인·세션·권한
 
-MLI 한국지부 홈페이지 기획안의 1단계인 데이터 구조를 구현한 독립 프로젝트입니다. 회원·상담·게시물의 원본을 보관하는 `mli-ops`와 공개용 복사본을 보관하는 `mli-content`를 분리했습니다.
+MLI 한국지부 홈페이지 기획안의 DB 기반에 Google 로그인, 서버 세션, 회원 본인 정보·활동 조회와 관리자 인증을 연결했습니다. 회원·상담·게시물의 원본을 보관하는 `mli-ops`와 공개용 복사본을 보관하는 `mli-content`를 분리했습니다.
 
-현재 구현한 것은 DB 테이블, 제약 조건, 인덱스, 로컬 마이그레이션, 상태 확인 API입니다. Google 로그인, 상담 제출, 게시판 CRUD, CMS 발행·동기화, AI 호출은 이후 단계에서 연결합니다. 프런트엔드와 연결하거나 외부에 배포한 상태는 아닙니다.
+현재 구현 범위는 DB 구조·마이그레이션, 상태 확인 API, Google ID 토큰 검증, 회원 가입·로그인·로그아웃, 프로필 조회·수정, 본인 게시글·댓글 조회, 관리자 허용 계정·코드·세션 검사입니다. 상담 제출, 게시판 CRUD, CMS 발행·동기화, AI 호출은 이후 단계에서 연결합니다. 프런트엔드 연결과 외부 배포는 이후 작업입니다.
+
+2단계 API와 Google 설정, 관리자 등록 방법은 [인증 연동 가이드](docs/authentication.md)에 정리했습니다. 실제 Google 로그인에는 기관의 웹용 OAuth 클라이언트 ID와 확정한 약관·개인정보 처리방침 버전이 필요합니다. 설정 전에는 상태 확인 API와 자동 테스트를 사용할 수 있습니다.
 
 ## 1단계를 진행하는 순서
 
@@ -18,7 +20,7 @@ MLI 한국지부 홈페이지 기획안의 1단계인 데이터 구조를 구현
 Node.js 24 이상이 필요합니다. Windows PowerShell 기준으로 아래 명령을 실행합니다. `npm.cmd`는 PowerShell의 `npm.ps1` 실행 정책 문제를 피합니다.
 
 ```powershell
-git clone --branch namuking1/mli-backend-step1 https://github.com/VAN-AI-Innovation-team/MLI_KR_Website_Overhaul.git
+git clone --branch namuking1/mli-backend-step2 https://github.com/VAN-AI-Innovation-team/MLI_KR_Website_Overhaul.git
 cd MLI_KR_Website_Overhaul/backend
 npm.cmd ci
 npm.cmd run db:migrate:local
@@ -28,36 +30,41 @@ npm.cmd run dev
 
 로컬 실행에는 Cloudflare 로그인이나 실제 D1 ID가 필요하지 않습니다. 설정 파일의 두 UUID는 로컬 개발용 자리표시자입니다. 데이터는 이 프로젝트의 `.wrangler/state/`에 저장됩니다.
 
-이미 저장소를 내려받았다면 해당 브랜치로 전환한 뒤 저장소의 `backend` 폴더에서 명령을 실행합니다. macOS와 Linux에서는 `npm.cmd` 대신 `npm`, `npx.cmd` 대신 `npx`를 사용합니다.
+2단계 코드는 `namuking1/mli-backend-step2` 브랜치에 있습니다. 이미 저장소를 내려받았다면 해당 브랜치로 전환한 뒤 `backend` 폴더에서 실행합니다. macOS와 Linux에서는 `npm.cmd` 대신 `npm`, `npx.cmd` 대신 `npx`를 사용합니다.
 
 서버 실행 후 브라우저에서 `http://127.0.0.1:8787/api/health`를 엽니다.
 
 ```json
-{"status":"ok","stage":1}
+{"status":"ok","stage":2}
 ```
 
-이 응답은 두 DB의 기본 테이블에 접근할 수 있음을 뜻합니다. 마이그레이션을 적용하지 않았거나 DB가 실패하면 개인정보나 내부 오류를 포함하지 않은 503 응답을 반환합니다. `/api/health` 외의 API는 아직 404를 반환합니다.
+이 응답은 두 DB와 2단계 인증 테이블·세션 필드에 접근할 수 있음을 뜻합니다. 마이그레이션을 적용하지 않았거나 DB가 실패하면 개인정보나 내부 오류를 포함하지 않은 503 응답을 반환합니다. `/api/auth/config`에서 Google 인증 설정 상태를 확인할 수 있습니다.
 
 검증 명령은 다음과 같습니다.
 
 ```powershell
 npm.cmd test
+npm.cmd run test:runtime
 npm.cmd run check
 ```
 
-`test`는 일회용 메모리 SQLite DB에서 제약 조건과 Worker 응답을 검증합니다. `check`는 테스트 후 Wrangler의 배포 파일 생성 검사(`--dry-run`)를 수행하며 실제 배포는 하지 않습니다. D1 런타임의 SQL 호환성은 `db:migrate:local`로 별도 검증합니다.
+`test`는 일회용 메모리 SQLite DB, 로컬 RSA 서명 토큰과 테스트 공개 키로 DB 규칙과 인증 처리 경로를 검증합니다. `test:runtime`은 빌드한 기본 Worker와 격리된 실제 로컬 D1에서 로그인·프로필·관리자·로그아웃을 검증합니다. 테스트 프로세스에서 Google 공개 키 응답만 테스트 키로 대체합니다. `check`는 테스트 후 Wrangler의 배포 파일 생성 검사(`--dry-run`)를 수행합니다. D1 마이그레이션 적용은 `db:migrate:local`로 확인합니다.
 
 ## 파일 읽는 순서
 
 | 파일 | 역할 |
 | --- | --- |
 | `docs/database.md` | 테이블 분류, 관계, 상태, 다음 단계에서 지켜야 할 규칙 |
+| `docs/authentication.md` | 2단계 API, Google·쿠키·관리자 설정과 연동 순서 |
 | `migrations/ops/0001_identity.sql` | 회원, Google 계정 연결, 운영자, 세션 |
 | `migrations/ops/0002_intake.sql` | 상담, Contact, 감사 기록 |
 | `migrations/ops/0003_editorial.sql` | 게시판, 번역, 댓글, 신고, AI 검수 원본, 발행 작업 |
+| `migrations/ops/0004_authentication.sql` | 일회용 로그인 챌린지, 시도 제한, 관리자 세션 연결 |
 | `migrations/content/0001_public_content.sql` | 공개 게시물, 승인 지식, 사이트 안내 경로 |
 | `wrangler.jsonc` | Worker와 D1 두 개의 연결 설정 |
-| `src/worker.js` | DB 연결 상태 확인 API |
+| `src/worker.js` | API 라우팅, 상태·인증·회원·관리자 세션 API |
+| `src/google.js`, `src/auth.js` | Google 서명 검증, 세션, 관리자 권한·시도 제한 |
+| `tests/auth.test.js` | 서명·소유권·재전송·만료·동시 가입·코드 교체 검증 |
 | `tests/schema.test.js` | DB 관계·동의·중복·공개 분리 검증 |
 
 ## 운영 DB로 옮길 때
@@ -81,7 +88,7 @@ npx.cmd wrangler d1 migrations apply mli-ops --remote
 
 ## 이후 개발 순서
 
-1. Google 토큰 검증, 서버 세션 쿠키, 회원별 소유권 확인, 관리자 허용 계정·코드 확인
+1. 실제 Google OAuth·약관 버전·운영자 설정과 프런트엔드 로그인 연결
 2. 상담·Contact 제출 API, Turnstile 서버 검증, 관리자 신청함 API
 3. 게시판·댓글·신고 API, 공식 콘텐츠 검수·발행, 공개 DB 동기화
 4. 승인 자료 검색과 AI 연결, 사용량 차단, 백업·복원

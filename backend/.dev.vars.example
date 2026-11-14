@@ -1,0 +1,12 @@
+# Local development only. Fill in the actual web OAuth client ID and approved
+# policy versions before testing real Google sign-in.
+APP_ORIGIN="http://127.0.0.1:8787"
+ALLOW_INSECURE_LOCAL_COOKIES="true"
+GOOGLE_CLIENT_ID=""
+TERMS_VERSION=""
+PRIVACY_VERSION=""
+
+# Comma-separated verified Google subjects, not email addresses.
+ADMIN_GOOGLE_SUBJECTS=""
+# SHA-256 of a random 32+ character admin code. Keep the actual code private.
+ADMIN_CODE_SHA256=""
