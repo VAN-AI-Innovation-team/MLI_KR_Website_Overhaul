@@ -99,7 +99,7 @@ try {
   const memberSession = await login(member, "member");
   const memberPosts = (await member.call("/api/me/posts")).body.items;
   assert.equal(memberPosts.length, 1);
-  assert.ok(memberPosts[0].title.startsWith("일반 회원"));
+  assert.ok(memberPosts[0].title.startsWith("test"));
   const other = browser();
   await login(other, "other");
   const otherPosts = (await other.call("/api/me/posts")).body.items;

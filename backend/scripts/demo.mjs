@@ -9,8 +9,8 @@ const ACCOUNTS = [
   {
     key: "member",
     subject: "demo-member",
-    nickname: "시연 회원",
-    label: "일반 회원",
+    nickname: "test",
+    label: "test",
     role: "member",
   },
   {
@@ -76,11 +76,7 @@ async function seed(runtime) {
           `INSERT INTO post_translations (post_id, locale, title, body)
         VALUES (?, 'ko', ?, ?)`,
         )
-        .bind(
-          postId,
-          `${account.label}의 리더십 탐색 기록`,
-          "본인 게시물 조회를 확인하기 위한 시연용 글입니다.",
-        ),
+        .bind(postId, `${account.label}의 리더십 탐색 기록`, "test"),
       runtime.ops
         .prepare(
           `INSERT INTO comments (id, post_id, author_id, body, created_at, updated_at)
@@ -90,7 +86,7 @@ async function seed(runtime) {
           crypto.randomUUID(),
           postId,
           userId,
-          `${account.label}이 작성한 시연용 댓글입니다.`,
+          `${account.label} test`,
           now,
           now,
         ),
@@ -110,13 +106,13 @@ async function seed(runtime) {
       .prepare(
         `INSERT INTO published_posts
       (id, board_type, slug, author_display_name, original_language, source_version, published_at, updated_at)
-      VALUES (?, 'notice', 'demo-welcome', 'MLI 시연', 'ko', 1, ?, ?)`,
+      VALUES (?, 'notice', 'demo-welcome', 'test', 'ko', 1, ?, ?)`,
       )
       .bind(publicId, now, now),
     runtime.content
       .prepare(
         `INSERT INTO published_post_translations (post_id, locale, title, body, source_version)
-      VALUES (?, 'ko', 'MLI 백엔드 시연 안내', '공개 콘텐츠 DB에 저장한 시연용 안내입니다.', 1)`,
+      VALUES (?, 'ko', 'test', 'test', 1)`,
       )
       .bind(publicId),
   ]);

@@ -28,6 +28,8 @@
 4. 로컬 기본 주소는 `http://127.0.0.1:8787`입니다. `ALLOW_INSECURE_LOCAL_COOKIES=true`는 HTTP 루프백 개발 주소에서만 적용됩니다. 운영 환경에서는 `APP_ORIGIN`을 실제 HTTPS 주소로 지정하고 해당 옵션을 끕니다.
 5. `npm.cmd run db:migrate:local`, `npm.cmd run dev`를 실행하고 `/api/auth/config`의 `configured`를 확인합니다.
 
+`http://127.0.0.1:8787`에서는 간단한 `test` 로그인 페이지를 제공합니다. 설정이 유효하면 공식 Google 버튼을 표시하고 nonce를 포함한 callback credential을 위 API로 전달합니다. `npm.cmd run demo`의 포트 8788은 가짜 서명 키와 별도 쿠키·임시 DB를 사용하는 테스트 계정 전용 서버입니다. 실제 Google credential은 8787의 실제 Google 공개 키 검증 경로에서만 처리합니다.
+
 Google ID 토큰 검증에는 공개 JWKS를 사용합니다. 클라이언트 secret은 이 로그인 방식에서 필요하지 않습니다. `.dev.vars`는 Git에서 제외합니다. 운영 비밀값은 기관 계정의 Worker 비밀 설정에서 관리합니다.
 
 ## 프런트엔드 처리 순서
