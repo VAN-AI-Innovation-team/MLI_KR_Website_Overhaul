@@ -1,6 +1,8 @@
-# MLI 백엔드 2단계 로그인·세션·권한
+# MLI 백엔드 통합 · 1·2단계
 
 MLI 한국지부 홈페이지 기획안의 DB 기반에 Google 로그인, 서버 세션, 회원 본인 정보·활동 조회와 관리자 인증을 연결했습니다. 회원·상담·게시물의 원본을 보관하는 `mli-ops`와 공개용 복사본을 보관하는 `mli-content`를 분리했습니다.
+
+1단계 DB 구조와 2단계 인증은 같은 `backend/` 프로젝트에서 실행합니다. 1단계 SQL 위에 `0004_authentication.sql`과 `0005_auth_session_indexes.sql`을 적용해 기존 회원·운영자·세션 테이블과 인증 API를 연결했습니다. 기존 로컬 DB도 `npm.cmd run db:migrate:local`로 추가 구조를 적용할 수 있습니다.
 
 현재 구현 범위는 DB 구조·마이그레이션, 상태 확인 API, Google ID 토큰 검증, 회원 가입·로그인·로그아웃, 프로필 조회·수정, 본인 게시글·댓글 조회, 관리자 허용 계정·코드·세션 검사입니다. 상담 제출, 게시판 CRUD, CMS 발행·동기화, AI 호출은 이후 단계에서 연결합니다. 프런트엔드 연결과 외부 배포는 이후 작업입니다.
 
@@ -20,7 +22,7 @@ MLI 한국지부 홈페이지 기획안의 DB 기반에 Google 로그인, 서버
 Node.js 24 이상이 필요합니다. Windows PowerShell 기준으로 아래 명령을 실행합니다. `npm.cmd`는 PowerShell의 `npm.ps1` 실행 정책 문제를 피합니다.
 
 ```powershell
-git clone --branch namuking1/mli-backend-step2 https://github.com/VAN-AI-Innovation-team/MLI_KR_Website_Overhaul.git
+git clone --branch namuking1/mli-backend-step1 https://github.com/VAN-AI-Innovation-team/MLI_KR_Website_Overhaul.git
 cd MLI_KR_Website_Overhaul/backend
 npm.cmd ci
 npm.cmd run db:migrate:local
@@ -30,7 +32,7 @@ npm.cmd run dev
 
 로컬 실행에는 Cloudflare 로그인이나 실제 D1 ID가 필요하지 않습니다. 설정 파일의 두 UUID는 로컬 개발용 자리표시자입니다. 데이터는 이 프로젝트의 `.wrangler/state/`에 저장됩니다.
 
-2단계 코드는 `namuking1/mli-backend-step2` 브랜치에 있습니다. 이미 저장소를 내려받았다면 해당 브랜치로 전환한 뒤 `backend` 폴더에서 실행합니다. macOS와 Linux에서는 `npm.cmd` 대신 `npm`, `npx.cmd` 대신 `npx`를 사용합니다.
+통합 작업 브랜치는 `namuking1/mli-backend-step1`입니다. 1·2단계 구현과 후속 변경을 이 브랜치에 누적합니다. 이미 저장소를 내려받았다면 해당 브랜치로 전환하고 최신 커밋을 받은 뒤 `backend` 폴더에서 실행합니다. macOS와 Linux에서는 `npm.cmd` 대신 `npm`, `npx.cmd` 대신 `npx`를 사용합니다.
 
 서버 실행 후 브라우저에서 `http://127.0.0.1:8787/api/health`를 엽니다.
 
