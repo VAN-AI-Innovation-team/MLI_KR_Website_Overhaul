@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MLI · 백엔드 인증 시연</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="/" aria-label="MLI 시연 홈"
+          ><span class="brand-mark">MLI<span>·</span></span
+          ><span class="brand-name">KOREA</span></a
+        >
+        <div class="sidebar-label">BACKEND WORKSPACE</div>
+        <nav aria-label="시연 메뉴">
+          <a class="nav-link selected" href="#auth-section"
+            ><span class="nav-icon">↗</span> 인증 시연</a
+          >
+          <a class="nav-link" href="#database-section"
+            ><span class="nav-icon">▤</span> 데이터베이스</a
+          >
+          <a class="nav-link" href="#api-section"
+            ><span class="nav-icon">⌘</span> API 요청 기록</a
+          >
+        </nav>
+        <div class="sidebar-bottom">
+          <span class="status-dot" id="server-dot"></span
+          ><span id="server-label">서버 확인 중</span
+          ><small>Cloudflare Workers · D1</small>
+        </div>
+      </aside>
+
+      <main>
+        <header class="page-header">
+          <div>
+            <div class="eyebrow">MLI KOREA / BACKEND DEMO</div>
+            <h1>회원 인증 시연</h1>
+            <p class="page-description">
+              로그인부터 회원 정보 저장, 관리자 권한 확인까지.
+            </p>
+          </div>
+          <div class="header-actions">
+            <span class="session-badge" id="session-badge">비로그인</span
+            ><button class="button secondary small" id="logout-button" hidden>
+              로그아웃
+            </button>
+          </div>
+        </header>
+
+        <div class="mode-notice">
+          <span class="notice-label">로컬 테스트 인증</span>
+          <p>
+            테스트 계정과 서명 키를 사용합니다. 회원·세션·권한 검사는 실제
+            백엔드 API와 임시 D1에서 처리합니다.
+          </p>
+        </div>
+
+        <div class="summary-strip" aria-label="서버 연결 상태">
+          <div>
+            <span class="summary-label">백엔드 상태</span
+            ><strong id="health-status">연결 확인 중</strong>
+          </div>
+          <div>
+            <span class="summary-label">데이터베이스</span
+            ><strong><span id="db-count">—</span><small>개 연결</small></strong>
+          </div>
+          <div>
+            <span class="summary-label">회원 세션</span
+            ><strong
+              ><span id="member-count">—</span><small>개 활성</small></strong
+            >
+          </div>
+          <div>
+            <span class="summary-label">관리자 세션</span
+            ><strong
+              ><span id="admin-count">—</span><small>개 활성</small></strong
+            >
+          </div>
+        </div>
+
+        <div
+          id="feedback"
+          class="feedback"
+          role="status"
+          aria-live="polite"
+          hidden
+        ></div>
+
+        <div class="workspace" id="auth-section">
+          <div class="main-stack">
+            <section
+              class="panel identity-panel"
+              aria-labelledby="identity-heading"
+            >
+              <div class="panel-heading">
+                <div>
+                  <div class="section-kicker">MEMBER AUTHENTICATION</div>
+                  <h2 id="identity-heading">회원 로그인</h2>
+                </div>
+                <span class="endpoint-label">/api/auth/google</span>
+              </div>
+              <div id="login-panel">
+                <p class="supporting">시연할 계정을 선택하세요.</p>
+                <div
+                  class="account-options"
+                  role="group"
+                  aria-label="테스트 계정 선택"
+                >
+                  <button
+                    class="account-option active"
+                    data-account="member"
+                    type="button"
+                    aria-pressed="true"
+                  >
+                    <span class="account-avatar">M</span
+                    ><span
+                      ><strong>일반 회원</strong
+                      ><small>본인 정보·활동 조회</small></span
+                    ><span class="choice-mark">✓</span>
+                  </button>
+                  <button
+                    class="account-option"
+                    data-account="operator"
+                    type="button"
+                    aria-pressed="false"
+                  >
+                    <span class="account-avatar operator">A</span
+                    ><span
+                      ><strong>운영자</strong
+                      ><small>추가 코드로 관리자 인증</small></span
+                    ><span class="choice-mark">✓</span>
+                  </button>
+                  <button
+                    class="account-option"
+                    data-account="other"
+                    type="button"
+                    aria-pressed="false"
+                  >
+                    <span class="account-avatar other">B</span
+                    ><span
+                      ><strong>다른 회원</strong
+                      ><small>회원별 데이터 분리 확인</small></span
+                    ><span class="choice-mark">✓</span>
+                  </button>
+                </div>
+                <button
+                  class="button primary full"
+                  id="login-button"
+                  type="button"
+                >
+                  테스트 계정으로 로그인 <span aria-hidden="true">→</span>
+                </button>
+                <button class="button google full" type="button" disabled>
+                  <span class="google-letter" aria-hidden="true">G</span> Google
+                  계정으로 로그인 <small>설정 필요</small>
+                </button>
+                <p class="footnote">
+                  실제 Google 로그인은 기관 OAuth 클라이언트 ID를 설정한 뒤
+                  연결합니다.
+                </p>
+              </div>
+              <div id="profile-panel" hidden>
+                <div class="member-card">
+                  <span class="member-avatar" id="member-avatar">M</span>
+                  <div>
+                    <strong id="member-name">—</strong
+                    ><span>서버 세션으로 인증됨</span>
+                  </div>
+                  <span class="verified-mark" aria-hidden="true">✓</span>
+                </div>
+                <form id="profile-form">
+                  <div class="form-grid">
+                    <label
+                      >닉네임<input
+                        id="nickname"
+                        name="nickname"
+                        maxlength="40"
+                        required
+                        autocomplete="off" /></label
+                    ><label
+                      >선호 언어<select id="language" name="language">
+                        <option value="ko">한국어</option>
+                        <option value="en">English</option>
+                        <option value="zh-CN">简体中文</option>
+                        <option value="es">Español</option>
+                        <option value="fr">Français</option>
+                        <option value="ja">日本語</option>
+                      </select></label
+                    >
+                  </div>
+                  <div class="profile-actions">
+                    <button
+                      class="button primary"
+                      type="submit"
+                      id="save-profile"
+                    >
+                      변경 사항 저장</button
+                    ><button
+                      class="button secondary"
+                      type="button"
+                      id="reload-profile"
+                    >
+                      내 정보 다시 조회
+                    </button>
+                  </div>
+                </form>
+                <div class="session-meta">
+                  <span>세션 만료</span><strong id="expires-at">—</strong>
+                </div>
+              </div>
+              <div class="probe-row">
+                <span>인증이 필요한 API의 응답을 확인합니다.</span
+                ><button class="text-button" id="probe-button" type="button">
+                  내 정보 API 확인 <span aria-hidden="true">↗</span>
+                </button>
+              </div>
+            </section>
+
+            <section class="panel" aria-labelledby="admin-heading">
+              <div class="panel-heading">
+                <div>
+                  <div class="section-kicker">ADMINISTRATOR ACCESS</div>
+                  <h2 id="admin-heading">관리자 권한 확인</h2>
+                </div>
+                <span class="mini-status" id="admin-status">인증 대기</span>
+              </div>
+              <p class="supporting" id="admin-description">
+                운영자 계정으로 로그인한 뒤 추가 코드를 확인합니다.
+              </p>
+              <form id="admin-form">
+                <label
+                  >관리자 코드
+                  <div class="code-input">
+                    <input
+                      id="admin-code"
+                      type="password"
+                      autocomplete="off"
+                      placeholder="시연 코드를 입력하세요"
+                      disabled
+                    /><button
+                      type="button"
+                      class="fill-code"
+                      id="fill-code"
+                      disabled
+                    >
+                      시연 코드 채우기
+                    </button>
+                  </div></label
+                >
+                <div class="admin-actions">
+                  <button
+                    class="button primary"
+                    id="admin-submit"
+                    type="submit"
+                    disabled
+                  >
+                    관리자 인증</button
+                  ><button
+                    class="button secondary"
+                    id="wrong-code"
+                    type="button"
+                    disabled
+                  >
+                    잘못된 코드 확인
+                  </button>
+                </div>
+              </form>
+              <div class="permission-list" id="permissions" hidden></div>
+              <p class="footnote">
+                일반 회원의 관리자 진입과 잘못된 코드는 서버에서 거부됩니다.
+                코드 오류 5회 후에는 15분간 제한됩니다.
+              </p>
+            </section>
+
+            <section
+              class="panel activity-panel"
+              aria-labelledby="activity-heading"
+            >
+              <div class="activity-heading">
+                <h2 id="activity-heading">내 활동</h2>
+                <div class="tab-group" role="group" aria-label="활동 종류">
+                  <button
+                    class="tab-button active"
+                    id="posts-tab"
+                    aria-pressed="true"
+                    type="button"
+                  >
+                    내 글</button
+                  ><button
+                    class="tab-button"
+                    id="comments-tab"
+                    aria-pressed="false"
+                    type="button"
+                  >
+                    내 댓글
+                  </button>
+                </div>
+              </div>
+              <div id="activity-list" class="activity-list">
+                <p class="empty-message">
+                  로그인하면 본인이 작성한 활동이 표시됩니다.
+                </p>
+              </div>
+            </section>
+          </div>
+
+          <aside class="side-stack">
+            <section
+              class="panel api-panel"
+              id="api-section"
+              aria-labelledby="api-heading"
+            >
+              <div class="panel-heading">
+                <div>
+                  <div class="section-kicker">LIVE API RESPONSE</div>
+                  <h2 id="api-heading">요청과 응답</h2>
+                </div>
+                <span class="live-dot" aria-label="실시간"></span>
+              </div>
+              <p class="supporting api-caption">
+                버튼을 누르면 실제 API 결과가 기록됩니다.
+              </p>
+              <div class="response-head">
+                <span id="response-method">GET</span
+                ><code id="response-path">/api/health</code
+                ><span id="response-status">—</span>
+              </div>
+              <pre
+                class="json-response"
+                id="response-body"
+                aria-label="선택한 API 응답"
+              >
+연결을 확인하고 있습니다.</pre
+              >
+              <div
+                class="request-log"
+                id="request-log"
+                aria-label="API 요청 이력"
+              ></div>
+              <p class="footnote api-footnote">
+                인증 토큰과 CSRF 값은 이 화면에서 제외합니다.
+              </p>
+            </section>
+
+            <section
+              class="panel database-panel"
+              id="database-section"
+              aria-labelledby="database-heading"
+            >
+              <div class="section-kicker">DATABASE FOUNDATION</div>
+              <h2 id="database-heading">1·2단계 DB 연결</h2>
+              <div class="database-row">
+                <span class="database-icon" aria-hidden="true">▤</span>
+                <div>
+                  <strong>mli-ops</strong
+                  ><small>회원·상담·게시물 원본·세션</small>
+                </div>
+                <span><strong id="ops-tables">—</strong> 테이블</span>
+              </div>
+              <div class="database-row">
+                <span class="database-icon public" aria-hidden="true">▤</span>
+                <div>
+                  <strong>mli-content</strong
+                  ><small>공개 콘텐츠·승인 자료</small>
+                </div>
+                <span><strong id="public-tables">—</strong> 테이블</span>
+              </div>
+              <div class="database-detail">
+                <span>시연 회원<strong id="user-count">—</strong></span
+                ><span>감사 기록<strong id="audit-count">—</strong></span
+                ><span>조회 뷰<strong id="view-count">—</strong></span>
+              </div>
+              <p class="footnote">
+                시연 데이터는 임시 DB에 저장되며 서버를 재시작하면 초기화됩니다.
+              </p>
+            </section>
+          </aside>
+        </div>
+        <footer class="page-footer">
+          <span>MLI KOREA · Backend stages 1 &amp; 2</span
+          ><span>로컬 시연 · 테스트 계정 전용</span>
+        </footer>
+      </main>
+    </div>
+  </body>
+</html>

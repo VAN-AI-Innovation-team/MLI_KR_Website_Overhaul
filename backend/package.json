@@ -8,12 +8,14 @@
   },
   "scripts": {
     "dev": "wrangler dev --local --ip 127.0.0.1",
+    "demo": "wrangler deploy --dry-run --outdir .build && node scripts/demo.mjs",
     "db:migrate:local": "node scripts/migrate-local.mjs",
     "admin:grant:local": "node scripts/grant-admin-local.mjs",
     "auth:hash-code": "node scripts/hash-admin-code.mjs",
     "db:inspect:local": "wrangler d1 execute mli-content --local --command \"SELECT name FROM sqlite_schema WHERE type IN ('table', 'view') AND name NOT LIKE 'sqlite_%' ORDER BY name\" && wrangler d1 execute mli-ops --local --command \"SELECT name FROM sqlite_schema WHERE type IN ('table', 'view') AND name NOT LIKE 'sqlite_%' ORDER BY name\"",
     "test": "node --test",
     "test:runtime": "wrangler deploy --dry-run --outdir .build && node scripts/runtime-smoke.mjs",
+    "test:demo": "wrangler deploy --dry-run --outdir .build && node scripts/demo-smoke.mjs",
     "check": "npm run test && wrangler deploy --dry-run --outdir .build"
   },
   "devDependencies": {
