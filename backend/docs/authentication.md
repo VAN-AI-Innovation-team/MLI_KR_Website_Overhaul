@@ -6,7 +6,7 @@
 
 | 메서드와 경로 | 처리 | 인증 |
 | --- | --- | --- |
-| GET `/api/health` | 두 DB와 2단계 스키마 확인 | 공개 |
+| GET `/api/health` | 두 DB와 현재 3단계 스키마 확인 | 공개 |
 | GET `/api/auth/config` | 클라이언트 ID·정책 버전·지원 언어와 설정 상태 | 공개 |
 | POST `/api/auth/challenge` | 일회용 nonce·CSRF 토큰과 HttpOnly 로그인 쿠키 발급 | Origin |
 | POST `/api/auth/google` | Google 서명 검증·가입·정책 재동의·회원 세션 교체 | 로그인 쿠키·nonce·CSRF·Origin |
@@ -76,7 +76,7 @@ Google ID 토큰 검증에는 공개 JWKS를 사용합니다. 클라이언트 se
 | moderator | 게시물·댓글·신고 조정 |
 | consultant | 상담 조회·처리 |
 
-권한 목록은 3단계 관리 API에서 사용할 서버 검사 함수 `requireAdmin(request, env, now, permission)`와 연결됩니다. 현재 관리 API는 세션 발급·확인까지 제공합니다.
+권한 목록은 서버 검사 함수 `requireAdmin(request, env, now, permission)`와 연결됩니다. 3단계 [상담·Contact 관리 API](intake.md)에서 목록·상세·변경·담당자·감사 권한을 검사합니다. 변경 요청에는 회원 CSRF가 아닌 관리자 세션이 발급한 CSRF를 사용합니다.
 
 ## 세션과 실패 처리
 

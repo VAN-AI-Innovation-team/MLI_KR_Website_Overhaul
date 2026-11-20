@@ -32,6 +32,9 @@ const FILES = {
   "/": ["index.html", "text/html; charset=utf-8"],
   "/style.css": ["style.css", "text/css; charset=utf-8"],
   "/app.js": ["app.js", "text/javascript; charset=utf-8"],
+  "/stage3": ["stage3.html", "text/html; charset=utf-8"],
+  "/stage3.css": ["stage3.css", "text/css; charset=utf-8"],
+  "/stage3.js": ["stage3.js", "text/javascript; charset=utf-8"],
 };
 
 async function seed(runtime) {
@@ -116,6 +119,48 @@ async function seed(runtime) {
       )
       .bind(publicId),
   ]);
+  const operator = await runtime.ops.prepare("SELECT user_id FROM auth_identities WHERE subject = 'demo-operator'").first();
+  const samples = [
+    { name: '김민지 (예시)', type: 'individual', status: 'new', topic: '처음 팀장을 맡았습니다. 팀원의 강점을 발견하고 업무를 배분하는 방법을 상담하고 싶습니다.', organization: null, age: 600 },
+    { name: '박서연 (예시)', type: 'organization', status: 'reviewing', topic: '구성원 20명을 위한 강점 기반 리더십 워크숍을 준비하고 있습니다. 프로그램과 진행 방식을 논의하고 싶습니다.', organization: '함께성장 팀 (예시)', age: 3600 },
+    { name: '최도윤 (예시)', type: 'organization', status: 'proposed', topic: '신임 리더 온보딩 프로그램에 강점 진단과 코칭을 도입하려고 합니다. 가능한 일정과 구성을 문의합니다.', organization: '내일교육 (예시)', age: 86400 },
+    { name: '이준호 (예시)', type: 'other', status: 'confirmed', topic: '커리어 전환 과정에서 나의 강점을 정리하고, 앞으로의 리더십 방향을 함께 점검하고 싶습니다.', organization: null, age: 172800 },
+  ];
+  for (const [index, sample] of samples.entries()) {
+    const id = crypto.randomUUID();
+    await runtime.ops.batch([
+      runtime.ops.prepare(`INSERT INTO consultations
+        (id, receipt_number, idempotency_key, request_hash, name, email, phone, consultation_type, topic, organization,
+        preferred_time_1, preferred_timezone, preferred_mode, privacy_consent_version, privacy_consented_at,
+        status, assigned_admin_id, internal_note, confirmed_time, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, '010-0000-0000', ?, ?, ?, ?, 'Asia/Seoul', 'online', ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .bind(id, `C-DEMO-${String(index + 1).padStart(3, '0')}`, crypto.randomUUID(), 'a'.repeat(64), sample.name,
+          `sample${index + 1}@example.invalid`, sample.type, sample.topic, sample.organization, now + (index + 2) * 86400,
+          runtime.intakePrivacyVersion, now - sample.age, sample.status, index ? operator.user_id : null,
+          index ? '시연용 메모입니다. 신청 내용을 확인하고 다음 일정을 준비해 주세요.' : '',
+          sample.status === 'confirmed' ? now + 5 * 86400 : null, now - sample.age, now - sample.age),
+      runtime.ops.prepare(`INSERT INTO audit_events (id, actor_kind, action, target_type, target_id, next_state, request_id, created_at)
+        VALUES (?, 'system', 'intake.demo_seeded', 'consultation', ?, ?, ?, ?)`)
+        .bind(crypto.randomUUID(), id, sample.status, crypto.randomUUID(), now - sample.age),
+    ]);
+  }
+  for (const [index, inquiry] of [
+    { name: '정하늘 (예시)', type: 'partnership', message: '청년 리더십 교육 프로그램의 공동 운영을 제안하고 싶습니다.', status: 'new' },
+    { name: '윤지수 (예시)', type: 'research', message: '강점 기반 리더십 관련 연구 자료와 협업 가능 여부를 문의합니다.', status: 'reviewing' },
+  ].entries()) {
+    const id = crypto.randomUUID();
+    await runtime.ops.batch([
+      runtime.ops.prepare(`INSERT INTO inquiries (id, receipt_number, idempotency_key, request_hash, inquiry_type, name, email,
+        message, privacy_consent_version, privacy_consented_at, status, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .bind(id, `I-DEMO-${String(index + 1).padStart(3, '0')}`, crypto.randomUUID(), 'b'.repeat(64), inquiry.type,
+          inquiry.name, `contact${index + 1}@example.invalid`, inquiry.message, runtime.intakePrivacyVersion,
+          now - 1800 - index * 3600, inquiry.status, now - 1800 - index * 3600, now - 1800 - index * 3600),
+      runtime.ops.prepare(`INSERT INTO audit_events (id, actor_kind, action, target_type, target_id, next_state, request_id, created_at)
+        VALUES (?, 'system', 'intake.demo_seeded', 'inquiry', ?, ?, ?, ?)`)
+        .bind(crypto.randomUUID(), id, inquiry.status, crypto.randomUUID(), now),
+    ]);
+  }
 }
 
 async function requestBody(request) {
@@ -123,7 +168,7 @@ async function requestBody(request) {
   const chunks = [];
   for await (const chunk of request) {
     size += chunk.length;
-    if (size > 16_384)
+    if (size > 65_536)
       throw Object.assign(new Error("BODY_TOO_LARGE"), { status: 413 });
     chunks.push(chunk);
   }
@@ -173,6 +218,7 @@ export async function startDemoServer({ port = 8788 } = {}) {
             role,
           })),
           demoAdminCode: DEMO_CODE,
+          stage: 3,
         });
       }
       if (url.pathname === "/demo/credential" && request.method === "POST") {
@@ -261,6 +307,7 @@ export async function startDemoServer({ port = 8788 } = {}) {
           "content-type",
           "x-csrf-token",
           "sec-fetch-site",
+          "idempotency-key",
         ]) {
           if (request.headers[name]) headers.set(name, request.headers[name]);
         }
@@ -312,6 +359,7 @@ export async function startDemoServer({ port = 8788 } = {}) {
       origin,
       adminCode: DEMO_CODE,
       adminSubjects: ["demo-operator"],
+      intake: true,
     });
     await seed(runtime);
   } catch (error) {

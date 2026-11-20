@@ -27,18 +27,27 @@ export function json(body, status = 200, extraHeaders = {}) {
   });
 }
 
-export function config(env) {
+export function originConfig(env) {
   try {
     const origin = new URL(env.APP_ORIGIN);
     const local = origin.protocol === 'http:' && LOOPBACK.has(origin.hostname)
       && env.ALLOW_INSECURE_LOCAL_COOKIES === 'true';
     if ((!local && origin.protocol !== 'https:') || origin.username || origin.password
       || origin.pathname !== '/' || origin.search || origin.hash) throw new Error();
+    return { origin: origin.origin };
+  } catch {
+    throw new HttpError(503, 'APP_NOT_CONFIGURED');
+  }
+}
+
+export function config(env) {
+  try {
+    const { origin } = originConfig(env);
     if (typeof env.GOOGLE_CLIENT_ID !== 'string'
       || !/^[A-Za-z0-9_-]+\.apps\.googleusercontent\.com$/.test(env.GOOGLE_CLIENT_ID)) throw new Error();
     if (!env.TERMS_VERSION?.trim() || !env.PRIVACY_VERSION?.trim()) throw new Error();
     return {
-      origin: origin.origin, clientId: env.GOOGLE_CLIENT_ID,
+      origin, clientId: env.GOOGLE_CLIENT_ID,
       termsVersion: env.TERMS_VERSION.trim(), privacyVersion: env.PRIVACY_VERSION.trim(),
     };
   } catch {
@@ -47,7 +56,7 @@ export function config(env) {
 }
 
 export function checkOrigin(request, env, required = false) {
-  const { origin } = config(env);
+  const { origin } = originConfig(env);
   const supplied = request.headers.get('Origin');
   if ((required && supplied !== origin) || (supplied !== null && supplied !== origin)
     || request.headers.get('Sec-Fetch-Site') === 'cross-site') {
@@ -55,7 +64,7 @@ export function checkOrigin(request, env, required = false) {
   }
 }
 
-export async function readJson(request) {
+export async function readJson(request, maxBytes = 16_384) {
   if (request.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase() !== 'application/json') {
     throw new HttpError(415, 'JSON_REQUIRED');
   }
@@ -68,7 +77,7 @@ export async function readJson(request) {
     const { value, done } = await reader.read();
     if (done) break;
     size += value.byteLength;
-    if (size > 16_384) {
+    if (size > maxBytes) {
       await reader.cancel();
       throw new HttpError(413, 'BODY_TOO_LARGE');
     }

@@ -137,7 +137,9 @@ test('stage 2 migration preserves stage 1 users and health detects a missing upg
   assert.equal((await browser(f).call('/api/health')).response.status, 503);
   ops.exec(readFileSync(new URL('../migrations/ops/0004_authentication.sql', import.meta.url), 'utf8'));
   assert.equal(ops.prepare("SELECT nickname FROM users WHERE id = 'existing'").get().nickname, '기존 회원');
-  assert.deepEqual((await browser(f).call('/api/health')).body, { status: 'ok', stage: 2 });
+  assert.equal((await browser(f).call('/api/health')).response.status, 503);
+  ops.exec(readFileSync(new URL('../migrations/ops/0006_intake_protection.sql', import.meta.url), 'utf8'));
+  assert.deepEqual((await browser(f).call('/api/health')).body, { status: 'ok', stage: 3 });
 });
 
 test('Google signup verifies a signed token, records consent and stores only hashed tokens', async t => {

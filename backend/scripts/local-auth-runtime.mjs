@@ -10,6 +10,7 @@ export async function createLocalAuthRuntime({
   origin,
   adminCode,
   adminSubjects,
+  intake = false,
 }) {
   const keys = await generateKeyPair("RS256");
   const jwk = {
@@ -37,12 +38,28 @@ export async function createLocalAuthRuntime({
         PRIVACY_VERSION: policies.privacyVersion,
         ADMIN_GOOGLE_SUBJECTS: adminSubjects.join(","),
         ADMIN_CODE_SHA256: await sha256(adminCode),
+        ...(intake ? {
+          INTAKE_PRIVACY_VERSION: 'local-test-intake-v1',
+          MARKETING_CONSENT_VERSION: 'local-test-marketing-v1',
+          TURNSTILE_SITE_KEY: 'isolated-local-site-key',
+          TURNSTILE_SECRET_KEY: 'isolated-local-secret-key',
+        } : {}),
       },
       d1Databases: {
         OPS_DB: "isolated-local-auth-ops",
         CONTENT_DB: "isolated-local-auth-content",
       },
       outboundService: async (request) => {
+        if (intake && request.url === 'https://challenges.cloudflare.com/turnstile/v0/siteverify') {
+          const input = await request.json();
+          const action = input.response.split(':')[0];
+          return Response.json({
+            success: input.secret === 'isolated-local-secret-key' && ['consultation', 'inquiry'].includes(action),
+            hostname: new URL(origin).hostname,
+            action,
+            challenge_ts: new Date().toISOString(),
+          });
+        }
         if (request.url !== "https://www.googleapis.com/oauth2/v3/certs") {
           throw new Error("Unexpected network request from local test runtime");
         }
@@ -81,6 +98,7 @@ export async function createLocalAuthRuntime({
       content,
       clientId,
       policies,
+      intakePrivacyVersion: intake ? 'local-test-intake-v1' : null,
       async issueCredential({ subject, email, nonce }) {
         const now = Math.floor(Date.now() / 1000);
         return new SignJWT({

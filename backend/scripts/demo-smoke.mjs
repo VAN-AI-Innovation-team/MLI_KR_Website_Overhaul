@@ -164,7 +164,7 @@ try {
     401,
   );
   const summary = (await operator.call("/demo/state")).body;
-  assert.equal(summary.opsTables, 17);
+  assert.equal(summary.opsTables, 18);
   assert.equal(summary.publicTables, 6);
   assert.equal(summary.views, 2);
   assert.equal(summary.users, 3);

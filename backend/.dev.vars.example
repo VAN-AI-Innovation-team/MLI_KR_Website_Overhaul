@@ -10,3 +10,13 @@ PRIVACY_VERSION=""
 ADMIN_GOOGLE_SUBJECTS=""
 # SHA-256 of a random 32+ character admin code. Keep the actual code private.
 ADMIN_CODE_SHA256=""
+
+# Stage 3: public intake. Set the approved intake policy separately from the
+# membership privacy policy. Never expose the secret key in a client bundle.
+TURNSTILE_SITE_KEY=""
+TURNSTILE_SECRET_KEY=""
+INTAKE_PRIVACY_VERSION=""
+# Optional: blank disables marketing opt-in.
+MARKETING_CONSENT_VERSION=""
+# Optional: approved retention period in days (1..36500); blank stores NULL.
+INTAKE_RETENTION_DAYS=""

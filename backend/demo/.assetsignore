@@ -1,0 +1,4 @@
+# The local demo server serves these files directly.
+/stage3.html
+/stage3.css
+/stage3.js

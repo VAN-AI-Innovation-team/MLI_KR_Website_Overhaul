@@ -14,7 +14,7 @@ test('health verifies both schemas without caching its response', async () => {
   const response = await worker.fetch(new Request('http://localhost/api/health'), environment());
   assert.equal(response.status, 200);
   assert.equal(response.headers.get('cache-control'), 'no-store');
-  assert.deepEqual(await response.json(), { status: 'ok', stage: 2 });
+  assert.deepEqual(await response.json(), { status: 'ok', stage: 3 });
 });
 
 test('database failures return a generic unavailable response', async () => {
@@ -23,8 +23,8 @@ test('database failures return a generic unavailable response', async () => {
   assert.equal((await response.text()).includes('private-sql-or-secret'), false);
 });
 
-test('intake and administration content APIs remain unavailable in stage 2', async () => {
-  for (const path of ['/api/consultations', '/api/admin/consultations', '/api/users']) {
+test('later-stage content APIs and arbitrary user lookup remain unavailable', async () => {
+  for (const path of ['/api/posts', '/api/admin/posts', '/api/users']) {
     const response = await worker.fetch(new Request(`http://localhost${path}`), environment());
     assert.equal(response.status, 404);
   }

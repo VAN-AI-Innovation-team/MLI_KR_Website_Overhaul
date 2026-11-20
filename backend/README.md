@@ -1,23 +1,27 @@
-# MLI 백엔드 통합 · 1·2단계
+# MLI 백엔드 통합 · 1·2·3단계
 
-MLI 한국지부 홈페이지 기획안의 DB 기반에 Google 로그인, 서버 세션, 회원 본인 정보·활동 조회와 관리자 인증을 연결했습니다. 회원·상담·게시물의 원본을 보관하는 `mli-ops`와 공개용 복사본을 보관하는 `mli-content`를 분리했습니다.
+MLI 한국지부 홈페이지 기획안의 DB 기반에 Google 로그인, 서버 세션, 회원 본인 정보·활동 조회, 관리자 인증과 상담·Contact 접수·관리 API를 연결했습니다. 회원·상담·게시물의 원본을 보관하는 `mli-ops`와 공개용 복사본을 보관하는 `mli-content`를 분리했습니다.
 
-1단계 DB 구조와 2단계 인증은 같은 `backend/` 프로젝트에서 실행합니다. 1단계 SQL 위에 `0004_authentication.sql`과 `0005_auth_session_indexes.sql`을 적용해 기존 회원·운영자·세션 테이블과 인증 API를 연결했습니다. 기존 로컬 DB도 `npm.cmd run db:migrate:local`로 추가 구조를 적용할 수 있습니다.
+1단계 DB 구조, 2단계 인증과 3단계 접수는 같은 `backend/` 프로젝트에서 실행합니다. 2단계 인증 마이그레이션에 이어 `0006_intake_protection.sql`을 추가해 접수 토큰 재사용을 막습니다. 기존 로컬 DB도 `npm.cmd run db:migrate:local`로 기존 데이터를 유지하며 추가 구조를 적용할 수 있습니다.
 
-현재 구현 범위는 DB 구조·마이그레이션, 상태 확인 API, Google ID 토큰 검증, 회원 가입·로그인·로그아웃, 프로필 조회·수정, 본인 게시글·댓글 조회, 관리자 허용 계정·코드·세션 검사입니다. 상담 제출, 게시판 CRUD, CMS 발행·동기화, AI 호출은 이후 단계에서 연결합니다. 프런트엔드 연결과 외부 배포는 이후 작업입니다.
+현재 구현 범위는 DB 구조·마이그레이션, 상태 확인 API, Google ID 토큰 검증, 회원 가입·로그인·로그아웃, 프로필 조회·수정, 본인 게시글·댓글 조회, 관리자 허용 계정·코드·세션 검사, 비회원 상담·Contact 접수와 관리자 신청함 API입니다. 3단계에는 Turnstile 서버 검증·속도 제한·중복 접수 방지·상태 전이·담당자 배정·일정·내부 메모·감사 기록을 포함합니다. 상담·신청함 프런트엔드, 게시판 CRUD, CMS 발행·동기화, AI 호출과 외부 배포는 이후 작업입니다.
 
 2단계 API와 Google 설정, 관리자 등록 방법은 [인증 연동 가이드](docs/authentication.md)에 정리했습니다. 실제 Google 로그인에는 기관의 웹용 OAuth 클라이언트 ID와 확정한 약관·개인정보 처리방침 버전이 필요합니다. 설정 전에는 상태 확인 API와 자동 테스트를 사용할 수 있습니다.
 
-## test 화면
+3단계 API와 입력·동의·Turnstile 설정, 상태 전이·관리 권한은 [상담·Contact 연동 가이드](docs/intake.md)를 확인합니다. 비회원 접수는 Google OAuth와 별개로 동작하며 `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`, `INTAKE_PRIVACY_VERSION`이 필요합니다. 선택 마케팅 동의와 보유 일수는 확정한 정책이 있을 때만 설정합니다.
 
-`backend` 폴더에서 아래 명령을 실행한 뒤 [test 화면](http://127.0.0.1:8788)을 엽니다.
+## 로컬 데모
+
+`backend` 폴더에서 아래 명령을 실행합니다.
 
 ```powershell
 npm.cmd ci
 npm.cmd run demo
 ```
 
-2단계 로그인만 확인하는 간단한 페이지입니다. `test 계정으로 로그인`을 누르면 로그인 성공 화면과 회원 닉네임이 표시됩니다. `로그인 상태 확인`은 서버의 세션을 다시 조회하고, `로그아웃`은 세션을 종료한 뒤 로그인 화면으로 돌아갑니다. 로그인 후 브라우저를 새로고침해도 로그인 상태가 유지됩니다.
+3단계는 [상담·문의 데모](http://127.0.0.1:8788/stage3)를 엽니다. 예시 내용을 채워 접수하고, **관리자 신청함 → 테스트 운영자로 입장**에서 원문 조회와 상태·담당자·메모 변경을 확인할 수 있습니다.
+
+2단계는 [로그인 데모](http://127.0.0.1:8788)를 엽니다. `test 계정으로 로그인`을 누르면 로그인 성공 화면과 회원 닉네임이 표시됩니다. `로그인 상태 확인`은 서버의 세션을 다시 조회하고, `로그아웃`은 세션을 종료합니다. 새로고침해도 로그인 상태가 유지됩니다.
 
 이 화면은 **로컬 테스트 인증**입니다. 테스트 계정·RSA 서명 키·Google 공개 키 응답만 시연용으로 구성하고, 회원·권한·세션 처리는 빌드한 실제 Worker와 별도의 임시 D1을 사용합니다. 실제 Google 계정 로그인은 OAuth 설정 후 연결해야 합니다. 시연은 `127.0.0.1`에서만 열리며, 기존 로컬 DB·환경 변수와 분리되고 서버를 다시 시작하면 초기화됩니다. 브라우저 쿠키도 `mli_demo_` 접두사로 분리합니다.
 
@@ -53,25 +57,26 @@ npm.cmd run dev
 
 로컬 실행에는 Cloudflare 로그인이나 실제 D1 ID가 필요하지 않습니다. 설정 파일의 두 UUID는 로컬 개발용 자리표시자입니다. 데이터는 이 프로젝트의 `.wrangler/state/`에 저장됩니다.
 
-통합 작업 브랜치는 `namuking1/mli-backend-step1`입니다. 1·2단계 구현과 후속 변경을 이 브랜치에 누적합니다. 이미 저장소를 내려받았다면 해당 브랜치로 전환하고 최신 커밋을 받은 뒤 `backend` 폴더에서 실행합니다. macOS와 Linux에서는 `npm.cmd` 대신 `npm`, `npx.cmd` 대신 `npx`를 사용합니다.
+통합 작업 브랜치는 `namuking1/mli-backend-step1`입니다. 1·2·3단계 구현과 후속 변경을 이 브랜치에 누적합니다. 이미 저장소를 내려받았다면 해당 브랜치로 전환하고 최신 커밋을 받은 뒤 `backend` 폴더에서 실행합니다. macOS와 Linux에서는 `npm.cmd` 대신 `npm`, `npx.cmd` 대신 `npx`를 사용합니다.
 
 서버 실행 후 브라우저에서 `http://127.0.0.1:8787/api/health`를 엽니다.
 
 ```json
-{"status":"ok","stage":2}
+{"status":"ok","stage":3}
 ```
 
-이 응답은 두 DB와 2단계 인증 테이블·세션 필드에 접근할 수 있음을 뜻합니다. 마이그레이션을 적용하지 않았거나 DB가 실패하면 개인정보나 내부 오류를 포함하지 않은 503 응답을 반환합니다. `/api/auth/config`에서 Google 인증 설정 상태를 확인할 수 있습니다.
+이 응답은 두 DB와 3단계 접수 보호·기존 인증 테이블에 접근할 수 있음을 뜻합니다. 마이그레이션을 적용하지 않았거나 DB가 실패하면 개인정보나 내부 오류를 포함하지 않은 503 응답을 반환합니다. `/api/auth/config`에서 Google 인증 설정 상태를, `/api/intake/config`에서 접수 설정 상태를 확인할 수 있습니다.
 
 검증 명령은 다음과 같습니다.
 
 ```powershell
 npm.cmd test
 npm.cmd run test:runtime
+npm.cmd run test:demo
 npm.cmd run check
 ```
 
-`test`는 일회용 메모리 SQLite DB, 로컬 RSA 서명 토큰과 테스트 공개 키로 DB 규칙과 인증 처리 경로를 검증합니다. `test:runtime`은 빌드한 기본 Worker와 격리된 실제 로컬 D1에서 로그인·프로필·관리자·로그아웃을 검증합니다. 테스트 프로세스에서 Google 공개 키 응답만 테스트 키로 대체합니다. `check`는 테스트 후 Wrangler의 배포 파일 생성 검사(`--dry-run`)를 수행합니다. D1 마이그레이션 적용은 `db:migrate:local`로 확인합니다.
+`test`는 일회용 SQLite DB와 테스트 외부 응답으로 DB·인증·접수·중복·권한·상태 전이·동시 수정·감사 롤백을 검증합니다. `test:runtime`은 빌드한 기본 Worker와 격리된 실제 로컬 D1에서 로그인부터 접수·신청함·로그아웃까지 검증합니다. 테스트 프로세스에서 Google·Turnstile 외부 응답만 대체합니다. `test:demo`는 기존 로그인 데모를 검사합니다. `check`는 테스트 후 Wrangler의 배포 파일 생성 검사(`--dry-run`)를 수행합니다. D1 마이그레이션 적용은 `db:migrate:local`로 확인합니다.
 
 ## 파일 읽는 순서
 
@@ -79,16 +84,21 @@ npm.cmd run check
 | --- | --- |
 | `docs/database.md` | 테이블 분류, 관계, 상태, 다음 단계에서 지켜야 할 규칙 |
 | `docs/authentication.md` | 2단계 API, Google·쿠키·관리자 설정과 연동 순서 |
+| `docs/intake.md` | 3단계 접수·Turnstile·중복·관리자 처리 API 계약 |
 | `migrations/ops/0001_identity.sql` | 회원, Google 계정 연결, 운영자, 세션 |
 | `migrations/ops/0002_intake.sql` | 상담, Contact, 감사 기록 |
 | `migrations/ops/0003_editorial.sql` | 게시판, 번역, 댓글, 신고, AI 검수 원본, 발행 작업 |
 | `migrations/ops/0004_authentication.sql` | 일회용 로그인 챌린지, 시도 제한, 관리자 세션 연결 |
+| `migrations/ops/0006_intake_protection.sql` | 접수 토큰 재사용 방지와 문의 유형 색인 |
 | `migrations/content/0001_public_content.sql` | 공개 게시물, 승인 지식, 사이트 안내 경로 |
 | `wrangler.jsonc` | Worker와 D1 두 개의 연결 설정 |
 | `src/worker.js` | API 라우팅, 상태·인증·회원·관리자 세션 API |
 | `src/google.js`, `src/auth.js` | Google 서명 검증, 세션, 관리자 권한·시도 제한 |
+| `src/intake.js`, `src/turnstile.js` | 접수 입력·동의·중복·서버 검증·원자적 저장 |
+| `src/intake-admin.js` | 신청함 조회·변경·일정·배정·감사 |
 | `tests/auth.test.js` | 서명·소유권·재전송·만료·동시 가입·코드 교체 검증 |
 | `tests/schema.test.js` | DB 관계·동의·중복·공개 분리 검증 |
+| `tests/intake.test.js` | 접수·권한·전이·경쟁·감사 롤백·기존 DB 업그레이드 |
 
 ## 운영 DB로 옮길 때
 
@@ -107,19 +117,19 @@ npx.cmd wrangler d1 migrations apply mli-content --remote
 npx.cmd wrangler d1 migrations apply mli-ops --remote
 ```
 
-로그인과 권한 검사가 완성되기 전에는 개인정보를 받는 운영 API를 공개하지 않습니다. 실제 배포 주소·Vercel rewrite는 프런트엔드 연결 단계에서 설정합니다. 현재 `workers_dev`는 `false`이고 배포 명령은 실행하지 않았습니다.
+실제 배포 주소·Vercel rewrite와 운영 인증·Turnstile·정식 동의 정책은 프런트엔드 연결 단계에서 설정합니다. 현재 `workers_dev`는 `false`이고 원격 배포 명령은 실행하지 않았습니다.
 
 ## 이후 개발 순서
 
-1. 실제 Google OAuth·약관 버전·운영자 설정과 프런트엔드 로그인 연결
-2. 상담·Contact 제출 API, Turnstile 서버 검증, 관리자 신청함 API
-3. 게시판·댓글·신고 API, 공식 콘텐츠 검수·발행, 공개 DB 동기화
-4. 승인 자료 검색과 AI 연결, 사용량 차단, 백업·복원
+1. 실제 Google OAuth·Turnstile·정식 정책·운영자 설정과 로그인·상담·Contact·관리자 신청함 프런트엔드 연결
+2. 게시판·댓글·신고 API, 공식 콘텐츠 검수·발행, 공개 DB 동기화
+3. 승인 자료 검색과 AI 연결, 사용량 차단, 백업·복원·보유 기간에 따른 파기
 
-유료 AI, 자동 이메일, 대용량 첨부 기능은 기본 설정에서 꺼져 있습니다. 실제 외부 호출 코드는 아직 없습니다. 보유 기간과 공식 동의 문구는 운영자가 확정한 정책을 다음 단계의 서버 설정에 연결해야 합니다.
+유료 AI, 자동 이메일, 대용량 첨부 기능은 기본 설정에서 꺼져 있으며 해당 호출 코드는 없습니다. 인증·접수 검증은 Google 공개 키와 Turnstile Siteverify를 사용합니다. 보유 기간과 공식 동의 문구는 운영자가 확정한 정책을 서버 설정과 프런트엔드에 연결해야 합니다.
 
 ## 공식 기술 근거
 
 - [D1 마이그레이션](https://developers.cloudflare.com/d1/reference/migrations/)
 - [D1 로컬 개발](https://developers.cloudflare.com/d1/best-practices/local-development/)
 - [D1 외래 키](https://developers.cloudflare.com/d1/sql-api/foreign-keys/)
+- [Turnstile 서버 검증](https://developers.cloudflare.com/turnstile/get-started/server-side-validation/)
